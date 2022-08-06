@@ -26,13 +26,19 @@ git grep -l 'Template' -- ${REPLACE_FILES} | xargs sed -i.bak "s/Template/${Prov
 # We need to be careful while replacing "template" keyword in go.mod as it could tamper
 # some imported packages under require section.
 sed -i.bak "s/provider-jet-template/provider-jet-${ProviderNameLower}/g" go.mod
+sed -i.bak "s@tf_provider_source@${TERRAFORM_PROVIDER_SOURCE}@g" ./config/patch_resource_schema.json
 
 # Clean up the .bak files created by sed
 git clean -fd
 
-git mv "internal/clients/template.go" "internal/clients/${ProviderNameLower}.go"
+# git mv "internal/clients/template.go" "internal/clients/${ProviderNameLower}.go"
 git mv "cluster/images/provider-jet-template" "cluster/images/provider-jet-${ProviderNameLower}"
 git mv "cluster/images/provider-jet-template-controller" "cluster/images/provider-jet-${ProviderNameLower}-controller"
+
+git mv "package/crds/resource.template.jet.crossplane.io_resources.yaml" "package/crds/resource.${ProviderNameLower}.jet.crossplane.io_resources.yaml"
+git mv "package/crds/template.jet.crossplane.io_providerconfigs.yaml" "package/crds/${ProviderNameLower}.jet.crossplane.io_providerconfigs.yaml"
+git mv "package/crds/template.jet.crossplane.io_providerconfigusages.yaml" "package/crds/${ProviderNameLower}.jet.crossplane.io_providerconfigusages.yaml"
+git mv "package/crds/template.jet.crossplane.io_storeconfigs.yaml" "package/crds/${ProviderNameLower}.jet.crossplane.io_storeconfigs.yaml"
 
 # We need to remove this api folder otherwise first `make generate` fails with
 # the following error probably due to some optimizations in go generate with v1.17:

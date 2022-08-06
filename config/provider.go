@@ -23,7 +23,8 @@ import (
 	tjconfig "github.com/crossplane/terrajet/pkg/config"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 
-	"github.com/crossplane-contrib/provider-jet-template/config/null"
+	"github.com/crossplane-contrib/provider-jet-template/config/resource"
+	jsonpatch "github.com/evanphx/json-patch"
 )
 
 const (
@@ -34,21 +35,31 @@ const (
 //go:embed schema.json
 var providerSchema string
 
+//go:embed patch_resource_schema.json
+var patchResourceSchema string
+
 // GetProvider returns provider configuration
 func GetProvider() *tjconfig.Provider {
 	defaultResourceFn := func(name string, terraformResource *schema.Resource, opts ...tjconfig.ResourceOption) *tjconfig.Resource {
 		r := tjconfig.DefaultResource(name, terraformResource)
 		// Add any provider-specific defaulting here. For example:
 		//   r.ExternalName = tjconfig.IdentifierFromProvider
+		r.ExternalName = tjconfig.IdentifierFromProvider
+
 		return r
 	}
 
-	pc := tjconfig.NewProviderWithSchema([]byte(providerSchema), resourcePrefix, modulePath,
+	modifiedSchema, err := jsonpatch.MergePatch([]byte(providerSchema), []byte(patchResourceSchema))
+	if err != nil {
+		panic(err)
+	}
+
+	pc := tjconfig.NewProviderWithSchema([]byte(modifiedSchema), resourcePrefix, modulePath,
 		tjconfig.WithDefaultResourceFn(defaultResourceFn))
 
 	for _, configure := range []func(provider *tjconfig.Provider){
 		// add custom config functions
-		null.Configure,
+		resource.Configure,
 	} {
 		configure(pc)
 	}
